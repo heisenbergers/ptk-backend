@@ -7,7 +7,7 @@ class PTKConfig:
     download_resolution = "480" #480p
 
     #model configs
-    model_checkpoint = "Qwen2.5-VL-7B-Instruct" #download into cache
+    model_checkpoint = "Qwen/Qwen2.5-VL-7B-Instruct" #download into cache
     quantization = "4bit" # Use "16bit" if AWQ/GPTQ, use "4bit" or "8bit" if using BitsAndBytes
     max_video_size = 50 # max size of video in MB
 
