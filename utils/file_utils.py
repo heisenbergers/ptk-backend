@@ -1,14 +1,14 @@
 import re
 import uuid
 import os
-import ffmpeg
+import json
+import subprocess
 from urllib.parse import urlparse
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import shutil
 from fastapi import HTTPException
 from config import PTKConfig
-from typing import Union
 import time
 import requests
 
@@ -44,43 +44,61 @@ class FileOperations:
 
     @staticmethod
     def probe_transcode(media_uuid, file_path):
-        ''' Probes a file for its codec, and transcodes it to libx264 if it is not already in that codec. 
-
-        Essential for passing it into Qwen2.5VL via decord. A temporary file is created before replacing the original file, because ffmpeg does not allow in-place replacement
-
+        '''Probes a file for its codec, and transcodes it to libx265 if needed.
+        Essential for passing it into Qwen2.5VL via decord.
+        
         Args:
-            media_uuid (str): uuid generated during the file upload, which is only used to create a temporary file
-            filepath (str): the file path of the original video. this will be replaced immediately with the temporary file 
+            media_uuid (str): uuid for the temporary file
+            file_path (str): path of the original video to be replaced
         '''
         try:
-            video_info = ffmpeg.probe(file_path)
+            # Probe the video using ffprobe
+            probe_cmd = [
+                'ffprobe', 
+                '-v', 'verbose', 
+                '-print_format', 'json', 
+                '-show_format', 
+                '-show_streams', 
+                file_path
+            ]
+            
+            probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+            video_info = json.loads(probe_result.stdout)
+            
             codec = video_info['streams'][0]['codec_name']
             size = float(video_info['format']['size']) / (1024 * 1024)
-            if (codec != Union["h264","h265"]) or (size > PTKConfig.max_video_size):
+            
+            if (codec not in ["h264", "h265", "hevc"]) or (size > PTKConfig.max_video_size):
                 print("Video processing failed, transcoding video ...")
-                temp_filepath = f"{media_uuid}_temp.mp4" # the use of a temporary filepath is necessary because ffmpeg does not allow overwrites
-                ffmpeg.input(file_path).output(
-                                                temp_filepath,
-                                                vcodec='libx265',
-                                                acodec='aac',
-                                                audio_bitrate='32k',
-                                                video_bitrate='400k',
-                                                preset='fast',
-                                                crf=28,
-                                                vf='scale=640:-2',
-                                                r=24
-                                                ).run(overwrite_output=True)
+                temp_filepath = f"{PTKConfig.temporary_transcoding_directory}/{media_uuid}_temp.mp4"
                 
+                # Transcode command with NVDEC hardware acceleration
+                transcode_cmd = [
+                    'ffmpeg',
+                    '-hwaccel', 'cuda',  # Hardware acceleration using NVDEC
+                    '-i', file_path,
+                    '-c:v', 'hevc_nvenc',
+                    '-c:a', 'aac',
+                    '-b:a', '32k',
+                    '-b:v', '400k',
+                    '-preset', 'fast',
+                    '-crf', '28',
+                    '-vf', 'scale=640:-2',
+                    '-r', '24',
+                    '-y',  # Equivalent to overwrite_output=True
+                    temp_filepath
+                ]
+                
+                subprocess.run(transcode_cmd, check=True)
                 os.replace(temp_filepath, file_path)
-
-
-        except ffmpeg.Error as e:
-            print('stdout:', e.stdout.decode('utf8'))
-            print('stderr:', e.stderr.decode('utf8'))
+                
+        except subprocess.CalledProcessError as e:
+            print('stdout:', e.stdout)
+            print('stderr:', e.stderr)
             raise e
-
         else:
             pass
+
 
     @staticmethod
     def create_and_verify_folders(directories:list):

@@ -1,12 +1,13 @@
 ### dependencies ###
-from fastapi import FastAPI, responses, UploadFile, Depends, Query
+from fastapi import FastAPI, UploadFile, Depends, Query
 from config import PTKConfig, ResponseModel
 from utils import DatabaseOperations, ModelOperations, VideoDownloader, FileOperations
 from sqlalchemy.orm import Session
 import random
 import uvicorn
+import torch
 
-FileOperations.create_and_verify_folders([PTKConfig.permanent_upload_directory, PTKConfig.temporary_upload_directory])
+FileOperations.create_and_verify_folders([PTKConfig.permanent_upload_directory, PTKConfig.temporary_upload_directory, PTKConfig.temporary_transcoding_directory])
 DatabaseOperations.initialise_db()
 model, processor = ModelOperations.load_model_and_processor()
 
@@ -135,8 +136,15 @@ async def predict(media_uuid: str, db: Session = Depends(DatabaseOperations.get_
                                                         system_prompt=PTKConfig.system_prompt,
                                                         user_prompt=PTKConfig.user_prompt,
                                                         file_path = file_record.file_path,)
-        except Exception as e:
-            raise(e)
+        except torch.OutOfMemoryError as e:
+            summary = f"{e}"
+            return ResponseModel(
+                        media_uuid=media_uuid,
+                        report_time=file_record.upload_datetime,
+                        deepfake=deepfake,
+                        summary=summary,
+                        status="Failed"
+                        )
 
     elif deepfake == True:
         summary = None

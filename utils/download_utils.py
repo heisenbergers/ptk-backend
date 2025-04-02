@@ -11,13 +11,14 @@ class VideoDownloader:
     permanent_uploads = PTKConfig.permanent_upload_directory
     temporary_uploads = PTKConfig.temporary_upload_directory
     downloader_options = {
-    'format': f'best[ext=mp4]',
+    'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]',
     'outtmpl': None,
-    'quiet': True,
+    'quiet': False,
     'noprogress': True,
     'nooverwrites': True,
     'socket_timeout': 30,
     'retries': 3, 
+    'cookiefile':'cookies.txt', # please take from burner account
     'noplaylist': True,           
     'restrictfilenames': True
     }

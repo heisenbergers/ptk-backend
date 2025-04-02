@@ -1,7 +1,7 @@
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 import torch
 from qwen_vl_utils import process_vision_info
-from config import PTKConfig
+from config import PTKConfig, ResponseModel
 from transformers import BitsAndBytesConfig
 
 
@@ -82,6 +82,7 @@ class ModelOperations:
         
         except torch.OutOfMemoryError as e:
             torch.cuda.empty_cache()
-            return ResponseModel()
+            raise torch.OutOfMemoryError
+
 
         
