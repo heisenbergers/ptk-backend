@@ -1,5 +1,6 @@
 ### dependencies ###
 from fastapi import FastAPI, UploadFile, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
 from config import PTKConfig, ResponseModel
 from utils import DatabaseOperations, ModelOperations, VideoDownloader, FileOperations
 from sqlalchemy.orm import Session
@@ -14,6 +15,11 @@ model, processor = ModelOperations.load_model_and_processor()
 ### api functions ###
 # initialising FastAPI
 app = FastAPI()
+
+app.add_middleware(CORSMiddleware,
+                   allow_origins=["*"],
+                   allow_methods=["*"],
+                   allow_headers=["*"])
 
 @app.get("/")
 def read_root():
