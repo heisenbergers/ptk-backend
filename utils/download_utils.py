@@ -18,7 +18,7 @@ class VideoDownloader:
     'nooverwrites': True,
     'socket_timeout': 30,
     'retries': 3, 
-    'cookiefile':'cookies.txt', # please take from burner account
+    'cookies':'/code/cookies.txt', # please take from burner account
     'noplaylist': True,           
     'restrictfilenames': True
     }
