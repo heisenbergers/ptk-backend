@@ -1,37 +1,47 @@
 # Upload configurations
 import shutil
 import tempfile
-import yt_dlp
+import subprocess
 import os
 from fastapi import HTTPException
 from .file_utils import FileOperations
 from config import PTKConfig
 
+
 class VideoDownloader:
     permanent_uploads = PTKConfig.permanent_upload_directory
     temporary_uploads = PTKConfig.temporary_upload_directory
-    downloader_options = {
-    'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]',
-    'outtmpl': None,
-    'quiet': False,
-    'noprogress': True,
-    'nooverwrites': True,
-    'socket_timeout': 30,
-    'retries': 3, 
-    'cookies':'/code/cookies.txt', # please take from burner account
-    'noplaylist': True,           
-    'restrictfilenames': True
-    }
-
+    
     @classmethod
     def run(cls, url):
-
+        # Create temporary directory for download
         video_temp_dir = tempfile.mkdtemp(prefix="media_dl_", dir=cls.temporary_uploads)
-        cls.downloader_options["outtmpl"] = os.path.join(video_temp_dir, '%(title)s.%(ext)s')
+        output_template = os.path.join(video_temp_dir, '%(title)s.%(ext)s')
+        
         try:
-            with yt_dlp.YoutubeDL(cls.downloader_options) as ydl:
-                ydl.download(url)
-                
+            # Build the yt-dlp command
+            cmd = [
+                'yt-dlp',
+                '--format', 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]',
+                '--output', output_template,
+                '--no-progress',
+                '--no-overwrites',
+                '--socket-timeout', '30',
+                '--retries', '3',
+                '--cookies', '/code/cookies.txt',
+                '--no-playlist',
+                '--restrict-filenames',
+                url
+            ]
+            
+            # Execute the command
+            result = subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            
             # 6) Validate downloaded files
             downloaded_files = os.listdir(video_temp_dir)
             if not downloaded_files:
@@ -67,15 +77,20 @@ class VideoDownloader:
             
             return media_uuid, upload_datetime, filename_cleaned, filepath, media_type
         
-        except yt_dlp.utils.DownloadError as e:
+        except subprocess.CalledProcessError as e:
+            # Handle command line execution errors
+            error_message = e.stderr if e.stderr else str(e)
             raise HTTPException(
                 status_code=400,
-                detail=f"Download failed: {str(e)}"
+                detail=f"Download failed: {error_message}"
             )
         
         except Exception as e:
+            # Clean up temp directory in case of error
+            if os.path.exists(video_temp_dir):
+                shutil.rmtree(video_temp_dir, ignore_errors=True)
+            
             raise HTTPException(
                 status_code=500,
                 detail=str(e)
             )
-
