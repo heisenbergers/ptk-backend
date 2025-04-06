@@ -11,16 +11,17 @@ class VideoDownloader:
     permanent_uploads = PTKConfig.permanent_upload_directory
     temporary_uploads = PTKConfig.temporary_upload_directory
     downloader_options = {
-    'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]',
-    'outtmpl': None,
-    'quiet': False,
-    'noprogress': True,
-    'nooverwrites': True,
-    'socket_timeout': 30,
-    'retries': 3, 
-    'cookies':'/code/cookies.txt', # please take from burner account
-    'noplaylist': True,           
-    'restrictfilenames': True
+        'format': 'best[ext=mp4]/best',
+        'outtmpl': None,
+        'quiet': False,
+        'noprogress': True,
+        'nooverwrites': True,
+        'socket_timeout': 30,
+        'retries': 3,
+        'cookiefile':'/code/cookies.txt', # please take from burner account
+        'noplaylist': True,
+        'restrictfilenames': True,
+        'merge_output_format': 'mp4', # Ensure final output is mp4
     }
 
     @classmethod
@@ -30,8 +31,8 @@ class VideoDownloader:
         cls.downloader_options["outtmpl"] = os.path.join(video_temp_dir, '%(title)s.%(ext)s')
         try:
             with yt_dlp.YoutubeDL(cls.downloader_options) as ydl:
-                ydl.download(url)
-                
+                ydl.download([url])
+
             # 6) Validate downloaded files
             downloaded_files = os.listdir(video_temp_dir)
             if not downloaded_files:
@@ -39,18 +40,23 @@ class VideoDownloader:
                     status_code=400,
                     detail="No file was downloaded from the provided URL."
                 )
-            
+
             if len(downloaded_files) > 1:
-                video_files = [f for f in downloaded_files if os.path.splitext(f)[1].lower() in ['.mp4', '.webm', '.mkv']]
+                video_files = [f for f in downloaded_files if os.path.splitext(f)[1].lower() in ['.mp4']]
                 if len(video_files) != 1:
                     raise HTTPException(
                         status_code=400,
-                        detail="Error: More than one video file downloaded, currently not supported"
+                        detail="Error: More than one MP4 video file downloaded, or no MP4 video found when multiple files were present."
                     )
                 temp_file = video_files[0]
+            elif len(downloaded_files) == 1 and os.path.splitext(downloaded_files[0])[1].lower() != '.mp4':
+                raise HTTPException(
+                    status_code=400,
+                    detail="Error: Downloaded video is not in MP4 format."
+                )
             else:
                 temp_file = downloaded_files[0]
-            
+
             full_temp_path = os.path.join(video_temp_dir, temp_file)
             media_uuid, upload_datetime, filename_cleaned, filepath, media_type = FileOperations.process_filename(full_temp_path)
             if not FileOperations.is_allowed_file(filename_cleaned):
@@ -60,22 +66,21 @@ class VideoDownloader:
                 )
             if media_type == "video":
                 FileOperations.probe_transcode(media_uuid, full_temp_path)
-                
+
             # 8) Move downloaded file from temp dir to final path
             os.replace(full_temp_path, filepath)
             shutil.rmtree(video_temp_dir, ignore_errors=True)
-            
+
             return media_uuid, upload_datetime, filename_cleaned, filepath, media_type
-        
+
         except yt_dlp.utils.DownloadError as e:
             raise HTTPException(
                 status_code=400,
                 detail=f"Download failed: {str(e)}"
             )
-        
+
         except Exception as e:
             raise HTTPException(
                 status_code=500,
                 detail=str(e)
             )
-
