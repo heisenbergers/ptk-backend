@@ -20,7 +20,7 @@ class FileOperations:
     allowed_mime_types = {"video/mp4", "video/x-msvideo", "video/quicktime", "video/x-matroska"}
     permitted_hosts = {'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com',
             'facebook.com', 'fb.com', 'instagram.com', 'twitter.com',
-            'x.com', 'reddit.com', 'tiktok.com'}
+            'x.com', 'reddit.com', 'tiktok.com', 'm.youtube.com', 'm.facebook.com'}
 
     @staticmethod
     def sanitize_filename(filename: str) -> str:
@@ -187,25 +187,65 @@ class FileOperations:
             raise HTTPException(status_code=500, detail=f"An error occurred while deleting the file: {str(e)}")
     
     @staticmethod
-    def sensity_post(file_record, headers):
+    def sensity_post(file_name, file_path, api_headers):
         url = "https://api.sensity.ai/tasks/face_manipulation"
         data = {"explain": True}
-        files = {"file": (f"{file_record.file_name}", open(f"{file_record.file_path}", "rb"), "video/mp4")}
-        task_id, post_success = requests.post(url, headers=headers, data=data, files=files).json()
-        return task_id, post_success
+        try:
+            with open(file_path, "rb") as f:
+                files = {"file": (file_name, f, "video/mp4")}
+                response = requests.post(url, headers=api_headers, data=data, files=files)
+                response.raise_for_status()
+                try:
+                    response_json = response.json()
+                    if "report_id" in response_json:
+                        task_id = response_json["report_id"]
+                        if response_json.get("success") is True:
+                            return task_id
+                        else:
+                            raise ValueError("API request was not successful")
+                    else:
+                        raise KeyError("Missing 'report_id' in the API response.")
+                except ValueError:
+                    raise ValueError("Failed to decode JSON response from the API.")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found at: {file_path}")
+        except requests.exceptions.RequestException as e:
+            raise requests.exceptions.RequestException(f"Error during API request: {e}")
 
+    
     @staticmethod
-    def sensity_polling(task_id, headers, interval=5, timeout=300):
+    def sensity_polling(task_id, api_headers, interval=5, timeout=500):
         url = f"https://api.sensity.ai/tasks/face_manipulation/{task_id}"
         end_time = time.time() + timeout
-        completed = False
-        while time.time() < end_time and completed == False:
+
+        while time.time() < end_time:
             try:
-                response = requests.get(url, headers=headers).json()
-                if response["status"] == "completed":
-                    completed = True
-                    return response["result"]
-            except requests.exceptions.RequestException:
-                pass
-            time.sleep(interval)
-        raise TimeoutError("Polling timed out")
+                response = requests.get(url, headers=api_headers)
+                response.raise_for_status()
+                response_json = response.json()
+                if "status" in response_json:
+                    if response_json["status"] == "completed":
+                        if "result" in response_json:
+                            return response_json["result"]
+                        else:
+                            raise KeyError("Missing 'result' key in the API response.")
+                time.sleep(interval)
+            except requests.exceptions.RequestException as e:
+                print(f"Error during API request: {e}")
+                time.sleep(interval) 
+            except KeyError as e:
+                print(f"Error parsing API response: {e}")
+                raise 
+
+        raise TimeoutError(f"Polling for task {task_id} timed out after {timeout} seconds.")
+
+    @staticmethod
+    def deepfake_detection(file_name, file_path, api_headers):
+        task_id = FileOperations.sensity_post(file_name, file_path, api_headers)
+        deepfake_task_response = FileOperations.sensity_polling(task_id, api_headers)
+        print(deepfake_task_response)
+        deepfake_classification = deepfake_task_response["class_name"]
+        if deepfake_classification == "real" or "no_faces":
+            return False
+        elif deepfake_classification == "fake":
+            return True
