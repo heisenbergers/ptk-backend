@@ -17,7 +17,6 @@ class CaseRecord(Base):
     source_url: Mapped[Optional[str]] = mapped_column(index= True)
     media_type: Mapped[str] = mapped_column(index=True)
     deepfake: Mapped[Optional[bool]] = mapped_column(index=True)
-    deepfake_probability: Mapped[Optional[float]] = mapped_column(index=True)
     summary: Mapped[Optional[str]] = mapped_column(index=True)
     status: Mapped[str] = mapped_column(index=True)
 
@@ -29,7 +28,6 @@ class CaseRecord(Base):
                 source_url={self.source_url!r},\
                 media_type={self.media_type!r},\
                 deepfake={self.deepfake!r},\
-                deepfake_probability={self.deepfake_probability!r},\
                 summary={self.summary!r},\
                 status={self.status!r})"
     
@@ -51,11 +49,12 @@ class DatabaseOperations:
             db.close()
 
     @staticmethod
-    def create_record(db, media_uuid, upload_datetime, file_name, file_path, source_url, media_type, status):
+    def create_record(db, media_uuid, upload_datetime, file_name,deepfake, file_path, source_url, media_type, status):
         case_video = CaseRecord(
                                     media_uuid=media_uuid,
                                     upload_datetime=upload_datetime,
                                     file_name=file_name,
+                                    deepfake=deepfake,
                                     file_path=file_path,
                                     source_url=source_url,
                                     media_type=media_type,

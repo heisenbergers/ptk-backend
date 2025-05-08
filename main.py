@@ -7,10 +7,13 @@ from sqlalchemy.orm import Session
 import random
 import uvicorn
 import torch
+import os
 
 FileOperations.create_and_verify_folders([PTKConfig.permanent_upload_directory, PTKConfig.temporary_upload_directory, PTKConfig.temporary_transcoding_directory])
 DatabaseOperations.initialise_db()
 model, processor = ModelOperations.load_model_and_processor()
+
+api_headers = {"Authorization": f"{os.getenv('SENSITY_API_KEY')}"}
 
 ### api functions ###
 # initialising FastAPI
@@ -23,12 +26,7 @@ app.add_middleware(CORSMiddleware,
 
 @app.get("/")
 def read_root():
-    return {"message":  "API is live."
-                        "/upload: endpoint to upload image or video; returns UUID"
-                        "/uploadurl: endpoint to upload an image or video url; returns UUID"
-                        "/delete/: endpoint to delete video; receives UUID, to trigger if user decides not to process video"
-                        "/predict/: endpoint to generate summary; receives UUID"
-                        }
+    return {"message":  "API is live."}
 
 
 @app.post("/uploadurl")
@@ -39,46 +37,64 @@ async def parse_url(
     try:
         FileOperations.url_security_check(url)
         media_uuid, upload_datetime, filename_cleaned, filepath, media_type = VideoDownloader.run(url=url)
-        DatabaseOperations.create_record(db=db,
-                                        media_uuid=media_uuid,
-                                        upload_datetime=upload_datetime,
-                                        file_name=filename_cleaned,
-                                        file_path=filepath,
-                                        source_url=url,
-                                        media_type=media_type,
-                                        status="Uploaded"
-                                        )        
+        deepfake = FileOperations.deepfake_detection(filename_cleaned, filepath, api_headers)
+        if not deepfake:
+            DatabaseOperations.create_record(db=db,
+                                media_uuid=media_uuid,
+                                upload_datetime=upload_datetime,
+                                file_name=filename_cleaned,
+                                file_path=filepath,
+                                deepfake=deepfake,
+                                source_url=url,
+                                media_type=media_type,
+                                status="Uploaded"
+                                )        
+
         return ResponseModel(media_uuid=media_uuid,
-                             report_time=upload_datetime,
-                             deepfake=None,
-                             summary=None,
-                             status="Uploaded")
+                    report_time=upload_datetime,
+                    deepfake=deepfake,
+                    summary=None,
+                    status="Uploaded")
+
     except Exception as e:
         print(f"Exception: {e}")
+        return ResponseModel(media_uuid=None,
+                        report_time=None,
+                        deepfake=None,
+                        summary=None,
+                        status="Failed")
         
-
 
 @app.post("/upload/")
 async def upload_file(post_file: UploadFile, db: Session = Depends(DatabaseOperations.get_db)) -> ResponseModel:
-    # cleaning of filenames to prevent injection
-    media_uuid, upload_datetime, filename_cleaned, filepath, media_type = FileOperations.upload(post_file)
+    try:
+        media_uuid, upload_datetime, filename_cleaned, filepath, media_type = FileOperations.upload(post_file)
+        deepfake = FileOperations.deepfake_detection(filename_cleaned, filepath, api_headers)
 
-    # creates a db record
-    DatabaseOperations.create_record(db=db,
-                                    media_uuid=media_uuid,
-                                    upload_datetime=upload_datetime,
-                                    file_name=filename_cleaned,
-                                    file_path=filepath,
-                                    source_url=None,
-                                    media_type=media_type,
-                                    status="Uploaded"
-                                    ) 
-    #PYDANTIC class
-    return ResponseModel(media_uuid=media_uuid,
-                             report_time=upload_datetime,
-                             deepfake=None,
-                             summary=None,
-                             status="Uploaded")
+        if not deepfake:
+            # creates a db record
+            DatabaseOperations.create_record(db=db,
+                                            media_uuid=media_uuid,
+                                            upload_datetime=upload_datetime,
+                                            file_name=filename_cleaned,
+                                            file_path=filepath,
+                                            source_url=None,
+                                            media_type=media_type,
+                                            status="Uploaded"
+                                            ) 
+
+        return ResponseModel(media_uuid=media_uuid,
+                                report_time=upload_datetime,
+                                deepfake=deepfake,
+                                summary=None,
+                                status="Uploaded")
+    except Exception as e:
+        print(f"Exception: {e}")
+        return ResponseModel(media_uuid=None,
+                        report_time=None,
+                        deepfake=None,
+                        summary=None,
+                        status="Failed")
 
 @app.delete("/delete/{media_uuid}")
 async def delete_video(media_uuid: str, db: Session = Depends(DatabaseOperations.get_db)):
@@ -93,82 +109,38 @@ async def delete_video(media_uuid: str, db: Session = Depends(DatabaseOperations
 
 @app.post("/predict/{media_uuid}")
 async def predict(media_uuid: str, db: Session = Depends(DatabaseOperations.get_db)) -> ResponseModel:
-    # to put in config
-    file_record = DatabaseOperations.retrieve_filerecord(db, media_uuid)
+    try:
+        file_record = DatabaseOperations.retrieve_filerecord(db, media_uuid)
+        summary = ModelOperations.inference(model=model,
+                                            processor=processor,
+                                            system_prompt=PTKConfig.system_prompt,
+                                            user_prompt=PTKConfig.user_prompt,
+                                            file_path = file_record.file_path,)
 
-    # docs :: https://docs.sensity.ai/#tag/Face-manipulation 
+        DatabaseOperations.update_filerecord(db=db,
+                                    media_uuid=media_uuid,
+                                    summary=summary,
+                                    deepfake=file_record.deepfake,
+                                    status="Completed")
 
-    # headers = {"Authorization": f"{os.getenv("SENSITY_API_KEY")}"}
-    # task_id, post_success = FileOperations.sensity_post(file_record, headers)
-    # deepfake_task_response = FileOperations.sensity_polling(task_id, headers)
-    # deepfake = deepfake_task_response["class_name"]
-    # deepfake_probability = deepfake_task_response["class_probability"]
-    
-    # if deepfake == True: 
-        # summary = ModelOperations.inference(model=model,
-        #                                    processor=processor,
-        #                                    system_prompt=PTKConfig.system_prompt,
-        #                                    user_prompt=PTKConfig.user_prompt,
-        #                                    file_path = file_record.file_path,)
-
-    # elif deepfake == False:
-        # summary = None
-
-    # return ResponseModel(
-    #                    media_uuid=media_uuid,
-    #                    report_time=file_record.upload_datetime,
-    #                    deepfake=deepfake,
-    #                    deepfake_probability=deepfake_probability
-    #                    summary=predicted_summary
-    #                    )  
-    #       
-    # else:
-    #     return ResponseModel(
-    #                    media_uuid=media_uuid,
-    #                    report_time=file_record.upload_datetime,
-    #                    deepfake=deepfake,
-    #                    deepfake_probability=deepfake_probability
-    #                    summary=None
-    #                    )
-    
-    ### Placeholder ###
-    deepfake_probability = random.random()
-    deepfake= deepfake_probability > 0.7
-    ### Placeholder ###
-    if deepfake == False:
-        try:
-            summary = ModelOperations.inference(model=model,
-                                                        processor=processor,
-                                                        system_prompt=PTKConfig.system_prompt,
-                                                        user_prompt=PTKConfig.user_prompt,
-                                                        file_path = file_record.file_path,)
-        except torch.OutOfMemoryError as e:
-            summary = f"{e}"
-            return ResponseModel(
+        return ResponseModel(
                         media_uuid=media_uuid,
                         report_time=file_record.upload_datetime,
-                        deepfake=deepfake,
-                        summary=summary,
-                        status="Failed"
-                        )
-
-    elif deepfake == True:
-        summary = None
-
-    DatabaseOperations.update_filerecord(db=db,
-                                        media_uuid=media_uuid,
-                                        summary=summary,
-                                        deepfake=deepfake,
-                                        deepfake_probability=deepfake_probability,
-                                        status="Completed")
-    
-    return ResponseModel(
-                        media_uuid=media_uuid,
-                        report_time=file_record.upload_datetime,
-                        deepfake=deepfake,
+                        deepfake=file_record.deepfake,
                         summary=summary,
                         status="Completed"
                         )
+
+    except Exception as e:
+        print(e)
+        return ResponseModel(
+                    media_uuid=media_uuid,
+                    report_time=file_record.upload_datetime,
+                    deepfake=None,
+                    summary=None,
+                    status="Failed"
+                    )
+
         
 # return the record from query.
 @app.get("/query/{media_uuid}")
