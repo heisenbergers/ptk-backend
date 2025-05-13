@@ -245,7 +245,10 @@ class FileOperations:
         deepfake_task_response = FileOperations.sensity_polling(task_id, api_headers)
         print(deepfake_task_response)
         deepfake_classification = deepfake_task_response["class_name"]
-        if deepfake_classification == "real" or "no_faces":
-            return False
-        elif deepfake_classification == "fake":
+        if deepfake_classification == "fake":
             return True
+        elif deepfake_classification in ["real", "no_faces"]:
+            return False
+        else:
+            print(f"Warning: Unconfigured deepfake classification '{deepfake_classification}'") # Or log
+            return False

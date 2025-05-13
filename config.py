@@ -6,6 +6,7 @@ class PTKConfig:
     temporary_upload_directory = "/tmp/yt-dlp"
     temporary_transcoding_directory = "/tmp/ffmpeg"
     download_resolution = "480" #480p
+    cookies_path = '/code/cookies.txt'
 
     #model configs
     model_checkpoint = "Qwen2.5-VL-7B-Instruct" #download into cache
@@ -41,8 +42,8 @@ class PTKConfig:
 
 
 class ResponseModel(BaseModel):
-    media_uuid: str
-    report_time: str
+    media_uuid: str | None
+    report_time: str | None
     deepfake: bool | None
     summary: str | None
     status: str

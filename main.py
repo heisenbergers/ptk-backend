@@ -13,7 +13,12 @@ FileOperations.create_and_verify_folders([PTKConfig.permanent_upload_directory, 
 DatabaseOperations.initialise_db()
 model, processor = ModelOperations.load_model_and_processor()
 
-api_headers = {"Authorization": f"{os.getenv('SENSITY_API_KEY')}"}
+
+#get API key and set headers
+sensity_api_key = os.getenv('SENSITY_API_KEY')
+if not sensity_api_key:
+    print("CRITICAL ERROR: SENSITY_API_KEY environment variable not set.")
+api_headers = {"Authorization": sensity_api_key} 
 
 ### api functions ###
 # initialising FastAPI
@@ -135,7 +140,7 @@ async def predict(media_uuid: str, db: Session = Depends(DatabaseOperations.get_
         print(e)
         return ResponseModel(
                     media_uuid=media_uuid,
-                    report_time=file_record.upload_datetime,
+                    report_time=None,
                     deepfake=None,
                     summary=None,
                     status="Failed"
