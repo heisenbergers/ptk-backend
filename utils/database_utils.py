@@ -74,11 +74,17 @@ class DatabaseOperations:
 
 
     @staticmethod
-    def update_filerecord(db, media_uuid, summary, deepfake, deepfake_probability,status):
-        db.execute(update(CaseRecord).where(CaseRecord.media_uuid == media_uuid).values(summary=summary))
-        db.execute(update(CaseRecord).where(CaseRecord.media_uuid == media_uuid).values(deepfake=deepfake))
-        db.execute(update(CaseRecord).where(CaseRecord.media_uuid == media_uuid).values(deepfake_probability=deepfake_probability))
-        db.execute(update(CaseRecord).where(CaseRecord.media_uuid == media_uuid).values(status=status))
+    def update_filerecord(db, media_uuid, summary, deepfake, status): 
+        stmt = (
+            update(CaseRecord)
+            .where(CaseRecord.media_uuid == media_uuid)
+            .values(
+                summary=summary,
+                deepfake=deepfake,
+                status=status
+            )
+        )
+        db.execute(stmt)
         db.commit()
 
     

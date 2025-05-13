@@ -77,7 +77,6 @@ class ModelOperations:
             output_texts = processor.batch_decode(
                 generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
             )
-            torch.cuda.empty_cache()
             return output_texts[0]
         
         except torch.OutOfMemoryError as e:

@@ -18,7 +18,7 @@ class VideoDownloader:
         'nooverwrites': True,
         'socket_timeout': 30,
         'retries': 3,
-        'cookiefile':'/code/cookies.txt', # please take from burner account
+        'cookiefile': PTKConfig.cookies_path, # please take from burner account
         'noplaylist': True,
         'restrictfilenames': True,
         'merge_output_format': 'mp4', # Ensure final output is mp4
@@ -69,7 +69,11 @@ class VideoDownloader:
 
             # 8) Move downloaded file from temp dir to final path
             os.replace(full_temp_path, filepath)
-            shutil.rmtree(video_temp_dir, ignore_errors=True)
+            try:
+                shutil.rmtree(video_temp_dir)
+            except Exception as e_cleanup:
+                print(f"Warning: Failed to remove temporary directory {video_temp_dir}: {e_cleanup}") # Or use proper logging
+
 
             return media_uuid, upload_datetime, filename_cleaned, filepath, media_type
 
