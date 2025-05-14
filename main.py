@@ -83,6 +83,7 @@ async def upload_file(post_file: UploadFile, db: Session = Depends(DatabaseOpera
                                             upload_datetime=upload_datetime,
                                             file_name=filename_cleaned,
                                             file_path=filepath,
+                                            deepfake=deepfake,
                                             source_url=None,
                                             media_type=media_type,
                                             status="Uploaded"
