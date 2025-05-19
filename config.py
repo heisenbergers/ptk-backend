@@ -23,6 +23,7 @@ class PTKConfig:
     - People: Record each individual, their physical characteristics, clothing details, and movements
     - Objects: Describe significant objects, their locations, and any interaction with people
     - Actions: Chronologically list all notable activities occurring in the footage
+    - Environment: Describe the surrounding buildings, landmarks, or any potential signage that may indicate location
 
     3. TEXT EXTRACTION: Identify and record all visible text including:
     - Timestamps and chronological indicators
@@ -33,11 +34,12 @@ class PTKConfig:
     4. FACTUAL REPORTING: Maintain strict objectivity by reporting only observable facts. Do not speculate about intentions, atmosphere, mood, or make subjective assessments about the context.
 
     You must only respond in the following format:
+    Summary:
     Description of People: 
     Objects Involved:
+    Environment:
     Chronology of Events:
     Extracted Text:
-    Summary:
     """
 
 
