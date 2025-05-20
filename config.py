@@ -86,16 +86,23 @@ class PTKConfig:
 
             You must **strictly** respond using **only** the following structured format. Ensure each section and sub-section is clearly labeled as specified and all information is presented under the correct heading. Use bullet points or numbered lists for itemized details within sections as appropriate. If a particular sub-section has no information to report, state "None observed" or "Not applicable" under that sub-heading to maintain structural integrity.
 
-            **Overall Security Synopsis (Brief - 1-2 sentences):**
+            **Summary (Brief - 1-2 sentences):**
             *[Provide a very brief overview of the security situation, e.g., "Footage depicts a potential shoplifting incident" or "No overt security threats observed, routine activity."]*
 
             **1. Threat Assessment Details:**
                 * **Identified Threat/Potential Threat 1:**
                     * Description:
-                    * Chain-of-Thought Reasoning (Observation, Interpretation, Affected Elements, Immediacy/Severity):
+                    * Observation:
+                    * Interpretation
+                    * Affected Elements
+                    * Immediacy/Severity:
                 * **Identified Threat/Potential Threat 2 (if any):**
                     * Description:
-                    * Chain-of-Thought Reasoning:
+                    * Description:
+                    * Observation:
+                    * Interpretation
+                    * Affected Elements
+                    * Immediacy/Severity:
                 * *[Continue for all identified threats. If none, state "None observed."]*
 
             **2. Detailed Inventory and Contextual Analysis:**
