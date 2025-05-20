@@ -250,5 +250,5 @@ class FileOperations:
         elif deepfake_classification in ["real", "no_faces"]:
             return False
         else:
-            print(f"Warning: Unconfigured deepfake classification '{deepfake_classification}'") # Or log
+            print(f"Warning: Unconfigured deepfake classification '{deepfake_classification}'")
             return False
