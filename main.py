@@ -8,17 +8,11 @@ import random
 import uvicorn
 import torch
 import os
+import time
 
 FileOperations.create_and_verify_folders([PTKConfig.permanent_upload_directory, PTKConfig.temporary_upload_directory, PTKConfig.temporary_transcoding_directory])
 DatabaseOperations.initialise_db()
 model, processor = ModelOperations.load_model_and_processor()
-
-
-#get API key and set headers
-sensity_api_key = os.getenv('SENSITY_API_KEY')
-if not sensity_api_key:
-    print("CRITICAL ERROR: SENSITY_API_KEY environment variable not set.")
-api_headers = {"Authorization": sensity_api_key} 
 
 ### api functions ###
 # initialising FastAPI
@@ -42,7 +36,8 @@ async def parse_url(
     try:
         FileOperations.url_security_check(url)
         media_uuid, upload_datetime, filename_cleaned, filepath, media_type = VideoDownloader.run(url=url)
-        deepfake = FileOperations.deepfake_detection(filename_cleaned, filepath, api_headers)
+        deepfake = PTKConfig.deepfake_config
+
         if not deepfake:
             DatabaseOperations.create_record(db=db,
                                 media_uuid=media_uuid,
@@ -74,7 +69,7 @@ async def parse_url(
 async def upload_file(post_file: UploadFile, db: Session = Depends(DatabaseOperations.get_db)) -> ResponseModel:
     try:
         media_uuid, upload_datetime, filename_cleaned, filepath, media_type = FileOperations.upload(post_file)
-        deepfake = FileOperations.deepfake_detection(filename_cleaned, filepath, api_headers)
+        deepfake = PTKConfig.deepfake_config
 
         if not deepfake:
             # creates a db record
@@ -94,6 +89,7 @@ async def upload_file(post_file: UploadFile, db: Session = Depends(DatabaseOpera
                                 deepfake=deepfake,
                                 summary=None,
                                 status="Uploaded")
+    
     except Exception as e:
         print(f"Exception: {e}")
         return ResponseModel(media_uuid=None,

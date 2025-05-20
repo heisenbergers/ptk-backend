@@ -2,8 +2,7 @@ from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 import torch
 from qwen_vl_utils import process_vision_info
 from config import PTKConfig, ResponseModel
-from transformers import BitsAndBytesConfig
-
+from transformers import BitsAndBytesConfig\
 
 class ModelOperations:
     checkpoint = PTKConfig.model_checkpoint
