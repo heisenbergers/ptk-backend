@@ -135,6 +135,13 @@ async def predict(media_uuid: str, db: Session = Depends(DatabaseOperations.get_
 
     except Exception as e:
         print(e)
+        
+        DatabaseOperations.update_filerecord(db=db,
+                            media_uuid=media_uuid,
+                            summary=None,
+                            deepfake=file_record.deepfake,
+                            status="Failed")
+        
         return ResponseModel(
                     media_uuid=media_uuid,
                     report_time=None,
@@ -154,7 +161,7 @@ async def query(media_uuid: str, db: Session = Depends(DatabaseOperations.get_db
                         report_time=file_record.upload_datetime,
                         deepfake=file_record.deepfake,
                         summary=file_record.summary,
-                        status="Completed"
+                        status=file_record.status
                         )
 
 

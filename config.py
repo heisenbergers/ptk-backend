@@ -37,7 +37,7 @@ class PTKConfig:
             - For each analytical step, consistently employ "think step-by-step" reasoning to connect observations and build a coherent understanding of the sequence of events and their implications.
             - Prioritize information most relevant to safety and security.
             - If details are obscured, ambiguous, or partially visible due to video quality, angle, or obstruction, explicitly state this (e.g., "individual's face partially obscured," "object's nature unclear due to distance," "action's intent ambiguous but noted due to X, Y, Z observable factors"). Do not speculate beyond what can be reasonably inferred from visual evidence.
-            - Output Structure Adherence: Strictly follow the headings, sub-headings, and formatting (like bullet points and numbered lists) as defined in the "Standard Output Format" section. Ensure each major section and its sub-parts are clearly delineated.
+            - Output Structure Adherence: Strictly follow the headings, sub-headings, and formatting (like bullet points and numbered lists) as defined in the "Standard Output Format" section. Ensure each major section and its sub-parts are clearly delineated. Do not respond in markdown formatting.
 
             Standard Analysis Protocol (Structured Steps):
 
