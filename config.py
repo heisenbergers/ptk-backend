@@ -38,6 +38,8 @@ class PTKConfig:
             - Prioritize information most relevant to safety and security.
             - If details are obscured, ambiguous, or partially visible due to video quality, angle, or obstruction, explicitly state this (e.g., "individual's face partially obscured," "object's nature unclear due to distance," "action's intent ambiguous but noted due to X, Y, Z observable factors"). Do not speculate beyond what can be reasonably inferred from visual evidence.
             - Output Structure Adherence: Do not respond in markdown formatting. Strictly follow the headings, sub-headings, and formatting as defined in the "Standard Output Format" section. Ensure each major section and its sub-parts are clearly delineated. 
+            - Avoid Speculation: Do not speculate about individuals' intentions, emotional states, motivations, internal thoughts, or the overall "atmosphere" or "mood," unless directly supported by unambiguous actions.
+            - Clarity on Inference: If an inference is made (e.g., "Person 1 appears to be an employee due to uniform"), clearly state the visual basis.
 
             Standard Analysis Protocol (Structured Steps):
 
@@ -74,10 +76,6 @@ class PTKConfig:
                     b.  Object-Related Text: Note any text on clothing, objects, or vehicles.
                     c.  Other Textual Information: Any other legible text present.
 
-                4.  FACTUAL REPORTING INTEGRITY:
-                    a.  Objectivity Mandate: Report only observable facts and direct visual evidence.
-                    b.  Avoid Speculation: Do not speculate about individuals' intentions, emotional states, motivations, internal thoughts, or the overall "atmosphere" or "mood," unless directly supported by unambiguous actions.
-                    c.  Clarity on Inference: If an inference is made (e.g., "Person 1 appears to be an employee due to uniform"), clearly state the visual basis.
 
             Standard Output Format:
 
@@ -92,17 +90,14 @@ class PTKConfig:
                     Setting Type:
                     Key Features & Layout:
                     Relevant Signage (Contextual):
-                    Environmental Conditions:
 
                 Description of People:
                     Person 1:
                         Physical Characteristics:
-                        Clothing Details:
                         Observed Actions & Interactions (Chronological, with step-by-step reasoning for significant action sequences):
 
                     Person 2 (if any):
                         Physical Characteristics:
-                        Clothing Details:
                         Observed Actions & Interactions:
                     
                     [Continue for all individuals. If no people are clearly discernible, state "No individuals clearly discernible."]
@@ -119,13 +114,6 @@ class PTKConfig:
                         Interactions:
                     [Continue for all significant objects. If none, state "None observed."]
 
-                Chronology of Key Events:
-                    Sub-event Description 1 (incorporating involved people/objects and step-by-step breakdown of complex actions)
-                    
-                    Sub-event Description 2
-                    
-                    [Continue for all notable events. If no notable events, state "No notable events observed."]
-
                 Extracted Text:
                     Signage (Business Names, Street Signs, Warnings, etc.):
                     
@@ -136,9 +124,11 @@ class PTKConfig:
                     Other Textual Information:
                     
                     [If no text is extracted in a category, state "None observed" for that category.]
+                
+                [## DO NOT INCLUDE A CONCLUSION OR SUGGEST FURTHER ACTION ##]
     """
     user_prompt = """
-                Analyze the provided security footage. Apply the Standard Analysis Protocol and Factual Reporting Integrity guidelines outlined in the system instructions.
+                Analyze the provided security footage. Apply the Standard Analysis Protocol outlined in the system instructions.
                 Deliver your findings using the specified Standard Output Format. Ensure all sections are completed thoroughly and accurately based on your visual analysis of the footage.
                 """
 
