@@ -69,13 +69,10 @@ class PTKConfig:
             Chronology of Events:
             Extracted Text:
             """
-    
+    user_prompt_fallback = "Analyse this security video footage objectively."
+
     system_prompt = os.getenv("system_prompt", system_prompt_fallback)
-
-    user_prompt = """
-                Analyse this security video footage objectively.
-                """
-
+    user_prompt = os.getenv("user_prompt",user_prompt_fallback)
 
 class ResponseModel(BaseModel):
     media_uuid: str | None
