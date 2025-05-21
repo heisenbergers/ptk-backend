@@ -74,10 +74,9 @@ class FileOperations:
                 
                 # Transcode command with NVDEC hardware acceleration
                 transcode_cmd = [
-                    'ffmpeg',
-                    '-hwaccel', 'cuda',  # Hardware acceleration using NVDEC
+                    'ffmpeg',  # Hardware acceleration using NVDEC
                     '-i', file_path,
-                    '-c:v', 'hevc_nvenc',
+                    '-c:v', 'libx265',
                     '-c:a', 'aac',
                     '-b:a', '32k',
                     '-b:v', '400k',
