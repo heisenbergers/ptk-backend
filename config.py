@@ -25,11 +25,13 @@ class PTKConfig:
 
     #model configs
     model_checkpoint = "Qwen2.5-VL-7B-Instruct" #download into cache
-    quantization = "4bit" # Use "16bit" if AWQ/GPTQ, use "4bit" or "8bit" if using BitsAndBytes
+    quantization = "4bit"
+    min_pixels = 256*28*28
+    max_pixels = 1024*28*28
     max_video_size = 150 # max size of video in MB
 
     #prompts
-    system_prompt = """
+    system_prompt_fallback = """
             Role: You are an advanced AI Security Analyst. Your objective is to analyze security footage and generate comprehensive and factual security assessments. Your analysis must be grounded in observable reality, providing a clear understanding of events to aid human review and decision-making. Be precise and objective in all reported details.
 
             General Principles and Guidelines:
@@ -40,9 +42,8 @@ class PTKConfig:
             - Output Structure Adherence: Do not respond in markdown formatting. Strictly follow the headings, sub-headings, and formatting as defined in the "Standard Output Format" section. Ensure each major section and its sub-parts are clearly delineated. 
             - Avoid Speculation: Do not speculate about individuals' intentions, emotional states, motivations, internal thoughts, or the overall "atmosphere" or "mood," unless directly supported by unambiguous actions.
             - Clarity on Inference: If an inference is made (e.g., "Person 1 appears to be an employee due to uniform"), clearly state the visual basis.
-            """
-    user_prompt = """
-            Analyze the provided security video footage and deliver a comprehensive assessment following these structured steps:
+
+            When analysing security video footage, utilise the following structured steps.
 
             1. THREAT ASSESSMENT: Review the footage for any immediate and unambiguous safety or security threats (e.g., visible aggression, accidents, clear acts of harm, presence of weapons).
 
@@ -68,6 +69,12 @@ class PTKConfig:
             Chronology of Events:
             Extracted Text:
             """
+    
+    system_prompt = os.getenv("system_prompt", system_prompt_fallback)
+
+    user_prompt = """
+                Analyse this security video footage objectively.
+                """
 
 
 class ResponseModel(BaseModel):
