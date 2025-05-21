@@ -78,9 +78,9 @@ class ModelOperations:
             )
             return output_texts[0]
         
-        except torch.OutOfMemoryError as e:
+        except Exception as e:
             torch.cuda.empty_cache()
-            raise torch.OutOfMemoryError
+            raise e
 
 
         
