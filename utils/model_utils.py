@@ -7,7 +7,7 @@ from transformers import BitsAndBytesConfig\
 class ModelOperations:
     checkpoint = PTKConfig.model_checkpoint
     min_pixels = 256*28*28
-    max_pixels = 1280*28*28
+    max_pixels = 1024*28*28
 
     @classmethod
     def load_model_and_processor(self, checkpoint=checkpoint, min_pixels = min_pixels, max_pixels = max_pixels):
