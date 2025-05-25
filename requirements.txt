@@ -30,7 +30,6 @@ fastapi==0.115.12
 fastapi-cli==0.0.7
 fastrlock==0.8.3
 filelock==3.18.0
-flash_attn==2.7.4.post1
 frozenlist==1.6.0
 fsspec==2025.5.1
 gguf==0.16.3
@@ -111,7 +110,7 @@ python-json-logger==3.3.0
 python-multipart==0.0.20
 PyYAML==6.0.2
 pyzmq==26.4.0
-qwen-vl-utils==0.0.11
+qwen-vl-utils[decord]==0.0.11
 ray==2.46.0
 referencing==0.36.2
 regex==2024.11.6
@@ -138,6 +137,7 @@ triton==3.2.0
 typer==0.15.4
 typing-inspection==0.4.1
 typing_extensions==4.13.2
+tzdata==2025.2
 urllib3==2.4.0
 uvicorn==0.34.2
 uvloop==0.21.0

@@ -28,7 +28,7 @@ class ModelOperations:
             dtype=torch.bfloat16,
             max_model_len=40960,
             enforce_eager=True,
-            gpu_memory_utilization=0.9,
+            gpu_memory_utilization=0.95,
         )
         
         processor = AutoProcessor.from_pretrained(
