@@ -14,7 +14,7 @@ WORKDIR /code
 COPY ./utils ./utils
 COPY ./config.py ./config.py
 COPY ./main.py ./main.py
-COPY ./Qwen2.5-VL-7B-Instruct ./Qwen2.5-VL-7B-Instruct
+COPY ./Qwen2.5-VL-7B-Instruct-AWQ ./Qwen2.5-VL-7B-Instruct-AWQ
 COPY ./cookies.txt ./cookies.txt
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

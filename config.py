@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 import os
 
-def get_deepfake_config():
+
+def get_deepfake_config(): # function to mandate that deepfake config is set
     deepfake_config = os.getenv("deepfake_config") 
     if not isinstance(deepfake_config, str):
         raise TypeError(f"Expected a string, but received type {type(deepfake_config).__name__}")
@@ -24,11 +25,14 @@ class PTKConfig:
     deepfake_config = get_deepfake_config()
 
     #model configs
-    model_checkpoint = "Qwen2.5-VL-7B-Instruct" #download into cache
+    model_checkpoint = "Qwen2.5-VL-7B-Instruct-AWQ" #download into cache
     quantization = "4bit"
     min_pixels = 256*28*28
     max_pixels = 1024*28*28
     max_video_size = 150 # max size of video in MB
+    temperature = 0.01
+    top_p = 0.001
+    max_new_tokens = 40960
 
     #prompts
     system_prompt_fallback = """

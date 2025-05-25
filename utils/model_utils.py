@@ -1,14 +1,14 @@
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
-import torch
+from transformers import AutoProcessor
+from vllm import LLM, SamplingParams
 from qwen_vl_utils import process_vision_info
-from config import PTKConfig, ResponseModel
-from transformers import BitsAndBytesConfig\
+from config import PTKConfig
+import torch
 
 class ModelOperations:
 
     @classmethod
-    def load_model_and_processor(self, checkpoint=PTKConfig.model_checkpoint, min_pixels = PTKConfig.min_pixels, max_pixels = PTKConfig.max_pixels):
-        """Initialises the model and processor
+    def load_model_and_processor(self, checkpoint=PTKConfig.model_checkpoint, min_pixels=PTKConfig.min_pixels, max_pixels=PTKConfig.max_pixels):
+        """Initialises the VLLM engine, processor, and sampling parameters.
 
         Args:
             checkpoint (str): File path of model folder (HF Format)
@@ -16,68 +16,88 @@ class ModelOperations:
             max_pixels (int): maximum pixels
 
         Returns:
-            model (Qwen2_5_VLForConditionalGeneration): Model class for generation
+            llm (LLM): VLLM engine instance
             processor (AutoProcessor): Processor class for tokenisation and chat template application
-
+            sampling_params (SamplingParams): Sampling parameters for VLLM
         """
-        if PTKConfig.quantization == "4bit":
-            quantization_config = BitsAndBytesConfig(load_in_4bit=True)
-        elif PTKConfig.quantization == "8bit":
-            quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-        elif PTKConfig.quantization == "16bit":
-            quantization_config = None
-
-        model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            checkpoint,
-            torch_dtype="auto",
-            device_map="auto",
-            attn_implementation="flash_attention_2",
-            quantization_config=quantization_config
-    )
+        llm = LLM(
+            model=checkpoint,
+            trust_remote_code=True,
+            limit_mm_per_prompt={"image": 10, "video": 10},
+            quantization='awq_marlin',
+            dtype=torch.bfloat16,
+            max_model_len=40960,
+            enforce_eager=True,
+            gpu_memory_utilization=0.9,
+        )
         
         processor = AutoProcessor.from_pretrained(
-        checkpoint,
-        min_pixels=min_pixels,
-        max_pixels=max_pixels,
-        use_fast=True
-    )
+            checkpoint,
+            min_pixels=min_pixels,
+            max_pixels=max_pixels,
+            use_fast=True
+        )
 
-        return model, processor
+        # Initialize SamplingParams (from the example script)
+        # You can expose these parameters or configure them via PTKConfig if needed
+        sampling_params = SamplingParams(
+            temperature=PTKConfig.temperature if hasattr(PTKConfig, 'temperature') else 0.1,
+            top_p=PTKConfig.top_p if hasattr(PTKConfig, 'temperature') else 0.001,
+            repetition_penalty=1.05,
+            max_tokens=PTKConfig.max_new_tokens if hasattr(PTKConfig, 'max_new_tokens') else 40960, # Use from PTKConfig or default
+            stop_token_ids=[], 
+        )
+
+        return llm, processor, sampling_params
     
     @staticmethod
-    def inference(model,
+    def inference(llm, 
                   processor,
+                  sampling_params, 
                   system_prompt,
                   user_prompt,
-                  file_path,
-                  max_new_tokens=3000):
+                  file_path, 
+                  ):
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": [{"type": "video", "video": file_path}, {"type": "text", "text": user_prompt}]},
+            {
+                "role": "user", 
+                "content": [
+                    {"type": "video", "video": file_path},
+                    {"type": "text", "text": user_prompt}
+                ]
+            },
         ]
-        text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        image_inputs, video_inputs = process_vision_info(messages)
-        inputs = processor(
-            text=[text],
-            images=image_inputs,
-            videos=video_inputs,
-            padding=True,
-            return_tensors="pt",
-        ).to(model.device)
+        
+        # Apply chat template
+        prompt_text = processor.apply_chat_template(
+            messages, 
+            tokenize=False, 
+            add_generation_prompt=True
+        )
+
+
+        image_inputs, video_inputs, video_kwargs = process_vision_info(messages, return_video_kwargs=True)
+
+        mm_data = {}
+        if image_inputs is not None:
+            mm_data["image"] = image_inputs
+        if video_inputs is not None:
+            mm_data["video"] = video_inputs
+        
+        llm_inputs = {
+            "prompt": prompt_text,
+            "multi_modal_data": mm_data,
+            "mm_processor_kwargs": video_kwargs, 
+        }
 
         try:
-        # inference stage 
-            with torch.inference_mode():
-                generated_ids = model.generate(**inputs, max_new_tokens=max_new_tokens)
-            generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
-            output_texts = processor.batch_decode(
-                generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
-            )
-            return output_texts[0]
+            # Inference stage using VLLM
+            outputs = llm.generate([llm_inputs], sampling_params=sampling_params)
+            generated_text = outputs[0].outputs[0].text
+            return generated_text
         
         except Exception as e:
-            torch.cuda.empty_cache()
+            print(f"VLLM Inference Exception: {e}")
             raise e
-
-
         
