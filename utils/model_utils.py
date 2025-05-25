@@ -85,7 +85,7 @@ class ModelOperations:
             model=checkpoint,
             trust_remote_code=True,
             limit_mm_per_prompt=limit_mm_per_prompt_dict,
-            quantization='awq_marlin',
+            quantization='bitsandbytes',
             dtype=torch.bfloat16,
             max_model_len=max_model_len,
             enforce_eager=True,

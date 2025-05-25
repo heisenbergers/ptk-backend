@@ -25,8 +25,8 @@ class PTKConfig:
     deepfake_config = get_deepfake_config()
 
     #model configs
-    model_checkpoint = "Qwen2.5-VL-7B-Instruct-AWQ" #download into cache
-    quantization = "4bit"
+    model_checkpoint = "Cosmo-Reason1-7B" #download into cache
+    quantization = "bitsandbytes"
     min_pixels = 256*28*28
     max_pixels = 1024*28*28
     max_video_size = 150 # max size of video in MB
