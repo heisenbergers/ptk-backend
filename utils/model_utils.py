@@ -37,6 +37,18 @@ class ModelOperations:
             print(f"Warning: Error reading max_model_len: {e}. Falling back to 25000.")
             max_model_len = 25000
 
+        try:
+            tensor_parallel_size_env = os.getenv("tensor_parallel_size")
+            tensor_parallel_size = int(tensor_parallel_size_env) if tensor_parallel_size_env is not None else 1
+            if tensor_parallel_size <= 0:
+                print(f"Warning: Invalid tensor_parallel_size value '{tensor_parallel_size_env}'. Falling back to 1.")
+                tensor_parallel_size = 1
+        except ValueError:
+            print(f"Warning: Could not parse tensor_parallel_size environment variable ('{tensor_parallel_size_env}'). Falling back to 1.")
+            tensor_parallel_size = 1
+        except Exception as e:
+            print(f"Warning: Error reading tensor_parallel_size: {e}. Falling back to 1.")
+            tensor_parallel_size = 1
 
         try:
             gpu_memory_utilization_env = os.getenv("gpu_memory_utilization")
@@ -51,7 +63,7 @@ class ModelOperations:
             print(f"Warning: Error reading gpu_memory_utilization: {e}. Falling back to 0.95.")
             gpu_memory_utilization = 0.95
 
-        print(f"Initializing LLM with max_model_len: {max_model_len}, gpu_memory_utilization: {gpu_memory_utilization}")
+        print(f"Initializing LLM with max_model_len: {max_model_len}, gpu_memory_utilization: {gpu_memory_utilization}, tensor_parallel_size: {tensor_parallel_size}") #
 
         try:
             limit_mm_image_env = os.getenv("mm_image")
@@ -81,15 +93,18 @@ class ModelOperations:
 
         limit_mm_per_prompt_dict = {"image": limit_mm_image, "video": limit_mm_video}
 
+        
+
         llm = LLM(
-            model=checkpoint,
-            trust_remote_code=True,
-            limit_mm_per_prompt=limit_mm_per_prompt_dict,
-            quantization='awq_marlin',
-            dtype=torch.bfloat16,
-            max_model_len=max_model_len,
-            enforce_eager=True,
-            gpu_memory_utilization=gpu_memory_utilization,
+            model=checkpoint, 
+            trust_remote_code=True, 
+            limit_mm_per_prompt=limit_mm_per_prompt_dict, 
+            quantization='awq_marlin', 
+            dtype=torch.bfloat16, 
+            max_model_len=max_model_len, 
+            enforce_eager=True, 
+            gpu_memory_utilization=gpu_memory_utilization, 
+            tensor_parallel_size=tensor_parallel_size 
         )
         
         processor = AutoProcessor.from_pretrained(
