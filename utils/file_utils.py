@@ -8,7 +8,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import shutil
 from fastapi import HTTPException
-from config import PTKConfig
+from config import settings
 import time
 import requests
 
@@ -81,9 +81,9 @@ class FileOperations:
             codec = video_info['streams'][0]['codec_name']
             size = float(video_info['format']['size']) / (1024 * 1024)
 
-            if (codec not in ["h264", "h265", "hevc"]) or (size > PTKConfig.max_video_size):
+            if (codec not in ["h264", "h265", "hevc"]) or (size > settings.max_video_size):
                 print("Video processing failed, transcoding video ...")
-                temp_filepath = f"{PTKConfig.temporary_transcoding_directory}/{media_uuid}_temp.mp4"
+                temp_filepath = f"{settings.temporary_transcoding_directory}/{media_uuid}_temp.mp4"
 
                 # Transcode command with NVDEC hardware acceleration
                 transcode_cmd = [
@@ -142,7 +142,7 @@ class FileOperations:
         upload_datetime = datetime.now(ZoneInfo('Asia/Singapore')).strftime(r"%d/%m/%y, %H:%M,%S")
         filename_cleaned = cls.sanitize_filename(filename)
         filename_cleaned = f"{media_uuid}_{filename_cleaned}"
-        file_path = os.path.join(PTKConfig.permanent_upload_directory, filename_cleaned)
+        file_path = os.path.join(settings.permanent_upload_directory, filename_cleaned)
         ext = os.path.splitext(filename)[1].lower()
         if ext in cls.allowed_video_extensions:
             media_type = "video"

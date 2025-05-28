@@ -5,11 +5,11 @@ import yt_dlp
 import os
 from fastapi import HTTPException
 from .file_utils import FileOperations
-from config import PTKConfig
+from config import settings
 
 class VideoDownloader:
-    permanent_uploads = PTKConfig.permanent_upload_directory
-    temporary_uploads = PTKConfig.temporary_upload_directory
+    permanent_uploads = settings.permanent_upload_directory
+    temporary_uploads = settings.temporary_upload_directory
     downloader_options = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': None,
@@ -18,7 +18,7 @@ class VideoDownloader:
         'nooverwrites': True,
         'socket_timeout': 30,
         'retries': 3,
-        'cookiefile': PTKConfig.cookies_path, # please take from burner account
+        'cookiefile': settings.cookies_path, # please take from burner account
         'noplaylist': True,
         'restrictfilenames': True,
         'merge_output_format': 'mp4', # Ensure final output is mp4
