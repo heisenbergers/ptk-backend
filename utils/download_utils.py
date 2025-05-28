@@ -26,6 +26,24 @@ class VideoDownloader:
 
     @classmethod
     def run(cls, url):
+        """Downloads a video from a given URL, processes it, and saves it.
+
+        Args:
+            url (str): The URL of the video to download.
+
+        Raises:
+            HTTPException: If the download fails, no file is downloaded,
+                           multiple files are downloaded, the downloaded file is not MP4,
+                           or an invalid file type is detected.
+
+        Returns:
+            tuple: A tuple containing:
+                - media_uuid (str): UUID of the downloaded media.
+                - upload_datetime (str): Datetime of the download.
+                - filename_cleaned (str): Sanitized name of the downloaded file.
+                - filepath (str): Path where the file is saved.
+                - media_type (str): Type of the media ("video" or "image").
+        """
 
         video_temp_dir = tempfile.mkdtemp(prefix="media_dl_", dir=cls.temporary_uploads)
         cls.downloader_options["outtmpl"] = os.path.join(video_temp_dir, '%(title)s.%(ext)s')
