@@ -90,7 +90,7 @@ async def parse_url(
     try:
         FileOperations.url_security_check(url)
         # Pass settings for directory paths to VideoDownloader.run if it needs them
-        media_uuid, upload_datetime, filename_cleaned, filepath, media_type = VideoDownloader.run(url=url, config=settings) # Pass settings
+        media_uuid, upload_datetime, filename_cleaned, filepath, media_type = VideoDownloader.run(url=url) # Pass settings
         deepfake_enabled = settings.deepfake_config 
 
         if not deepfake_enabled: # Logic remains the same, just using settings
@@ -143,7 +143,7 @@ async def upload_file(post_file: UploadFile, db: Session = Depends(DatabaseOpera
         ResponseModel: An object containing details of the uploaded video or failure status.
     """
     try:
-        media_uuid, upload_datetime, filename_cleaned, filepath, media_type = FileOperations.upload(post_file, config=settings) # Pass settings
+        media_uuid, upload_datetime, filename_cleaned, filepath, media_type = FileOperations.upload(post_file) # Pass settings
         deepfake_enabled = settings.deepfake_config 
 
         initial_deepfake_status = None if deepfake_enabled else False
