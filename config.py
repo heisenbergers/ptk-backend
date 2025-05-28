@@ -11,36 +11,47 @@ def get_deepfake_config():
     Returns:
         bool: The boolean value of the 'deepfake_config' environment variable.
     """
-    deepfake_config = os.getenv("deepfake_config")
-    if not isinstance(deepfake_config, str):
-        raise TypeError(f"Expected a string, but received type {type(deepfake_config).__name__}")
-
-    if "True" in deepfake_config:
+    deepfake_config_str = os.getenv("DEEPFAKE_CONFIG", "False") # Default to "False"
+    if deepfake_config_str.lower() == "true":
         return True
-    elif "False" in deepfake_config:
+    elif deepfake_config_str.lower() == "false":
         return False
     else:
-        raise ValueError("Environment variable 'deepfake_config' must be a boolean value")
+        # Fallback to False if the value is not a recognizable boolean string
+        print(f"Warning: Environment variable 'DEEPFAKE_CONFIG' has an invalid boolean value '{deepfake_config_str}'. Defaulting to False.")
+        return False
 
 class PTKConfig:
+    """Application configuration class.
+    Values are sourced from environment variables with sensible fallbacks.
+    """
 
-    #upload configs
-    permanent_upload_directory = "storage/videos"
-    temporary_upload_directory = "/tmp/yt-dlp"
-    temporary_transcoding_directory = "/tmp/ffmpeg"
-    download_resolution = "480" #480p
-    cookies_path = 'cookies.txt'
-    deepfake_config = get_deepfake_config()
+    # Upload configs
+    permanent_upload_directory: str = os.getenv("PERMANENT_UPLOAD_DIRECTORY", "storage/videos")
+    temporary_upload_directory: str = os.getenv("TEMPORARY_UPLOAD_DIRECTORY", "/tmp/yt-dlp")
+    temporary_transcoding_directory: str = os.getenv("TEMPORARY_TRANSCODING_DIRECTORY", "/tmp/ffmpeg")
+    download_resolution: str = os.getenv("DOWNLOAD_RESOLUTION", "480")  # 480p
+    cookies_path: str = os.getenv("COOKIES_PATH", "cookies.txt")
+    deepfake_config: bool = get_deepfake_config()
 
-    #model configs
-    model_checkpoint = "Qwen2.5-VL-7B-Instruct" #download into cache
-    quantization = "4bit"
-    min_pixels = 256*28*28
-    max_pixels = 1024*28*28
-    max_video_size = 150 # max size of video in MB
+    # Model configs
+    model_checkpoint: str = os.getenv("MODEL_CHECKPOINT", "Qwen2.5-VL-7B-Instruct")  # download into cache
+    quantization: str = os.getenv("QUANTIZATION", "4bit") # "4bit", "8bit", or "16bit" (for no quantization, technically it's full precision)
 
-    #prompts
-    system_prompt_fallback = """
+    @staticmethod
+    def _get_int_env(var_name: str, default: int) -> int:
+        try:
+            return int(os.getenv(var_name, str(default)))
+        except ValueError:
+            print(f"Warning: Invalid integer value for {var_name}. Using default: {default}")
+            return default
+
+    min_pixels: int = _get_int_env("MIN_PIXELS", 256 * 28 * 28)
+    max_pixels: int = _get_int_env("MAX_PIXELS", 1024 * 28 * 28)
+    max_video_size: int = _get_int_env("MAX_VIDEO_SIZE_MB", 150)  # max size of video in MB
+
+    # Prompts
+    _system_prompt_fallback = """
                             ### Role and Goal ###
                             # You are an advanced AI Security Analysis Assistant. Your primary objective is to meticulously analyze security footage and generate comprehensive, factual, and actionable security assessments. Your analysis must be grounded in observable reality, providing a clear understanding of events to aid human review and decision-making. Strive for precision and objectivity in all reported details.
                             #
@@ -93,10 +104,10 @@ class PTKConfig:
                             4) [Chronological timeline of actions taken in the clip]
                             5) [A list of extracted text and their associated objects]
                             """
-    user_prompt_fallback = "Analyse this security video footage objectively."
+    _user_prompt_fallback = "Analyse this security video footage objectively."
 
-    system_prompt = os.getenv("system_prompt", system_prompt_fallback)
-    user_prompt = os.getenv("user_prompt",user_prompt_fallback)
+    system_prompt: str = os.getenv("SYSTEM_PROMPT", _system_prompt_fallback)
+    user_prompt: str = os.getenv("USER_PROMPT", _user_prompt_fallback)
 
 class ResponseModel(BaseModel):
     media_uuid: str | None
@@ -105,13 +116,16 @@ class ResponseModel(BaseModel):
     summary: str | None
     status: str | None
 
-    model_config= { "json_schema_extra":{
-                                    "example": {
-                                                "media_uuid": "a0d9asd9f-v8sd-v9ad-n9018203k1023",
-                                                "upload_datetime": "28/03/25, 18:45,49",
-                                                "deepfake": False,
-                                                "summary": "The following video describes...",
-                                                "status": "Completed"
-                                                }
-                                        }
-                    }
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "media_uuid": "a0d9asd9f-v8sd-v9ad-n9018203k1023",
+                "upload_datetime": "28/03/25, 18:45,49",
+                "deepfake": False,
+                "summary": "The following video describes...",
+                "status": "Completed"
+            }
+        }
+    }
+
+settings = PTKConfig()

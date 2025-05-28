@@ -1,35 +1,35 @@
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 import torch
 from qwen_vl_utils import process_vision_info
-from config import PTKConfig, ResponseModel
+from config import settings, ResponseModel
 from transformers import BitsAndBytesConfig
 
 class ModelOperations:
 
     @classmethod
-    def load_model_and_processor(self, checkpoint=PTKConfig.model_checkpoint, min_pixels = PTKConfig.min_pixels, max_pixels = PTKConfig.max_pixels):
+    def load_model_and_processor(self, checkpoint=settings.model_checkpoint, min_pixels = settings.min_pixels, max_pixels = settings.max_pixels):
         """Initialises and loads the Qwen2.5-VL model and its processor.
 
-        Configuration for quantization (4-bit, 8-bit, or none) is taken from PTKConfig.
+        Configuration for quantization (4-bit, 8-bit, or none) is taken from settings.
 
         Args:
             checkpoint (str, optional): The Hugging Face model checkpoint name or path.
-                                        Defaults to PTKConfig.model_checkpoint.
+                                        Defaults to settings.model_checkpoint.
             min_pixels (int, optional): Minimum number of pixels for image/video processing.
-                                        Defaults to PTKConfig.min_pixels.
+                                        Defaults to settings.min_pixels.
             max_pixels (int, optional): Maximum number of pixels for image/video processing.
-                                        Defaults to PTKConfig.max_pixels.
+                                        Defaults to settings.max_pixels.
 
         Returns:
             tuple: A tuple containing:
                 - model (Qwen2_5_VLForConditionalGeneration): The loaded model.
                 - processor (AutoProcessor): The loaded processor.
         """
-        if PTKConfig.quantization == "4bit":
+        if settings.quantization == "4bit":
             quantization_config = BitsAndBytesConfig(load_in_4bit=True)
-        elif PTKConfig.quantization == "8bit":
+        elif settings.quantization == "8bit":
             quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-        elif PTKConfig.quantization == "16bit":
+        elif settings.quantization == "16bit":
             quantization_config = None
 
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(

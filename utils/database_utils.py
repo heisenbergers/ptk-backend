@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from typing import Optional
+import os # Added import
 
 class Base(DeclarativeBase):
     pass
@@ -37,8 +38,15 @@ class CaseRecord(Base):
                 status={self.status!r})"
 
 class DatabaseOperations:
-    DATABASE_URL = 'sqlite:///storage/case_videos.db'
-    database_engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    # Fallback to SQLite if DATABASE_URL is not set
+    _default_db_url = 'sqlite:///storage/case_videos.db'
+    DATABASE_URL = os.getenv("DATABASE_URL", _default_db_url) # Get from env or use fallback
+    if DATABASE_URL == _default_db_url:
+        # Ensure the directory for the SQLite DB exists if using the default path
+        os.makedirs(os.path.dirname(_default_db_url.replace("sqlite:///", "")), exist_ok=True)
+
+
+    database_engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=database_engine)
 
     @classmethod
